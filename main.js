@@ -23,6 +23,8 @@
 
 const CONSUMPTION_FLAT_DAY=4;
 const CONSUMPTION_FLAT_NIGHT=1;
+const DAY=1;
+const NIGHT=0;
 
 class ElectricalNetwork {
 	constructor(networkArr){
@@ -119,32 +121,29 @@ class ElectricalNetwork {
 		return sortedPoverLineUpArr
 	}
 
+	
+	calculateCostEnergy(dayOrNight){
 
-	calculateCostDayEnergy(){
+		let energy;
+		if(dayOrNight){
+			energy=this.differenceDayEnergy();
+		}else(energy=this.differenceNightEnergy());
+		
 		let powlineDown=this.sortPowerLineDown();
-		console.log('powline: ', powlineDown);
-		let powlineUp=this.sortPowerLineUp();
-		console.log('powlineUp: ', powlineUp);
 
-		let energy=this.differenceDayEnergy();
-		console.log('energy: ', energy)
+		let powlineUp=this.sortPowerLineUp();
 		let costE;
 		// Если энергия в плюсе(лишняя)
 			if(energy>0){
 				costE=powlineDown.reduce(function (cost,item) {
-					console.log('item: ', item);
-					// если энергии больше,чем можно передать по одной линии
+					// если энергии больше,чем можно передать по одной линии,мы считаем стоимость по самой дорогой цене
 					if(energy>item.powerLine){
-						cost+=item.costPowerLine;
+						cost+=item.costPowerLine*item.powerLine;
 						energy-=item.powerLine;
-						// мы ее передаем по второй
-						if(energy>0&&energy<item.powerLine){
-							cost+=(item.costPowerLine/item.powerLine)*energy;
-							energy=0;
-					}
-					// если всю энергию можно передать по одной линии
+					
+					// если всю энергию можно передать по одной линии или у нас есть остаток от первого if
 				}else if(energy>0&&energy<item.powerLine){
-					cost+=(item.costPowerLine/item.powerLine)*energy;
+					cost+=item.costPowerLine*energy;
 					energy=0;
 				}
 				return cost
@@ -155,19 +154,14 @@ class ElectricalNetwork {
 			energy=Math.abs(energy)
 			// Возвращаем отрицательное значение
 			costE=-powlineUp.reduce(function (cost,item) {
-				console.log('item: ', item);
-				// если энергии больше,чем можно передать по одной линии
+				// если энергии больше,чем можно передать по одной линии,то считаем стоимость по самой минимальной цене
 				if(energy>item.powerLine){
-					cost+=item.costPowerLine;
+					cost+=item.costPowerLine**item.powerLine;
 					energy-=item.powerLine;
-					// мы ее передаем по второй
-					if(energy>0&&energy<item.powerLine){
-						cost+=(item.costPowerLine/item.powerLine)*energy;
-						energy=0;
-				}
-				// если всю энергию можно передать по одной линии
+			
+				/// если всю энергию можно передать по одной линии или у нас есть остаток от первого if
 			}else if(energy>0&&energy<=item.powerLine){
-				cost+=(item.costPowerLine/item.powerLine)*energy;
+				cost+=item.costPowerLine*energy;
 				energy=0
 			}
 			return cost
@@ -177,10 +171,13 @@ class ElectricalNetwork {
 		if(energy=0){
 			console.log("Лишней или недостатка Энергии нет ");
 		}	
-			
-	console.log('costE: ', costE);
-	return  costE
+	return Math.abs(costE) 
 }
+	console(){
+		console.log(`Для обеспечения баланса нам необходимо:  
+		Днем -${this.differenceDayEnergy()>0?`излишек `:`недостаток`} энергии ${this.differenceDayEnergy()} мегаватт, нам необходимо ${this.differenceDayEnergy()>0?`продать `:`закупить`}на сумму ${Math.ceil((this.calculateCostEnergy(DAY))*100)/100} грн
+		Ночью-${this.differenceNightEnergy()>0?`излишек `:`недостаток`} энергии ${this.differenceNightEnergy()} мегаватт, нам необходимо ${this.differenceNightEnergy()>0?`продать `:`закупить`}на сумму ${Math.ceil((this.calculateCostEnergy(NIGHT))*100)/100} грн`);
+	}
 
 }
 
@@ -226,7 +223,7 @@ class SolarPanele {
 	}
 };
 
-class PowerLine {
+class PowerLine {	
 	constructor(powerLine,costPowerLine){
 		this.powerLine=powerLine;
 		this.costPowerLine=costPowerLine;
@@ -252,10 +249,8 @@ let electricalnetwork = new ElectricalNetwork([
 		 new PowerLine(6.6 * 1000, 1000),
 	]);
 
-	console.log('electricalnetwork:', electricalnetwork.calculateCostDayEnergy());
-	// console.log('day',electricalnetwork.differenceDayEnergy());
+	console.log('electricalnetwork:', electricalnetwork.console());
 
-	
-//  и где-то тут есть ошибка (в calculateCostDayEnergy()),если лишней энергии очень много ,странная ошибка (анонимная функция какая-то), но могу понять из-за чего
+
 	
 	
